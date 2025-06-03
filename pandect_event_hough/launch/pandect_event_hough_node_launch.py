@@ -6,13 +6,14 @@ from ament_index_python import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node, SetParameter
+from launch_ros.actions import Node, SetParameter,  ComposableNodeContainer
+from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
 
     remappable_topics = [
-        DeclareLaunchArgument("input_topic", default_value="~/input"),
+        DeclareLaunchArgument("event_topic", default_value="~/events"),
         DeclareLaunchArgument("output_topic", default_value="~/output"),
     ]
 
@@ -26,17 +27,23 @@ def generate_launch_description():
     ]
 
     nodes = [
-        Node(
-            package="pandect_event_hough",
-            executable="pandect_event_hough_node",
+        ComposableNodeContainer(
+            name='pandect_event_hough_container',
             namespace=LaunchConfiguration("namespace"),
-            name=LaunchConfiguration("name"),
-            parameters=[LaunchConfiguration("params")],
-            arguments=["--ros-args", "--log-level", LaunchConfiguration("log_level")],
-            remappings=[(la.default_value[0].text, LaunchConfiguration(la.name)) for la in remappable_topics],
-            output="screen",
-            emulate_tty=True,
-        )
+            package='rclcpp_components',
+            executable='component_container',
+            composable_node_descriptions=[
+                ComposableNode(
+                package='pandect_event_hough',
+                plugin='pandect_event_hough::HoughTransformNode',
+                name=LaunchConfiguration("name"),
+                remappings=[
+                    ("~/events", LaunchConfiguration("event_topic")),
+                    ("~/output", LaunchConfiguration("output_topic")),
+                ],
+                )
+            ]
+        ),
     ]
 
     return LaunchDescription([

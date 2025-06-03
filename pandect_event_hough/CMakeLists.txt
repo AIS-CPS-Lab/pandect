@@ -9,13 +9,15 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(event_camera_codecs REQUIRED)
+find_package(event_camera_msgs REQUIRED)
 
 set(TARGET_NAME pandect_event_hough_node_component)
 
 add_library(${TARGET_NAME} SHARED src/pandect_event_hough_node.cpp)
 
 rclcpp_components_register_node(${TARGET_NAME}
-  PLUGIN "pandect_event_hough::EventHoughNode"
+  PLUGIN "pandect_event_hough::HoughTransformNode"
   EXECUTABLE pandect_event_hough_node
 )
 
@@ -29,6 +31,8 @@ ament_target_dependencies(${TARGET_NAME}
   rclcpp
   rclcpp_components
   std_msgs
+  event_camera_codecs
+  event_camera_msgs
 )
 
 install(TARGETS ${TARGET_NAME}

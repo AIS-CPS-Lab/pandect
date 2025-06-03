@@ -1,142 +1,53 @@
 #include <functional>
 
-#include <pandect_event_hough/pandect_event_hough_node.hpp>
+// Update the include path below if the header is in the same directory or adjust as needed
+#include "pandect_event_hough_node.hpp"
 
 #include <rclcpp_components/register_node_macro.hpp>
-RCLCPP_COMPONENTS_REGISTER_NODE(pandect_event_hough::EventHoughNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(pandect_event_hough::HoughTransformNode)
 
 
 namespace pandect_event_hough {
 
+HoughTransformNode::HoughTransformNode(const rclcpp::NodeOptions& options) : Node("pandect_event_hough_node", options) {
+	std::cout << "HoughTransformNode constructor called" << std::endl;
+	hough_transform_estimator_ = HoughTransformEstimator();
+	RCLCPP_INFO(this->get_logger(), "HoughTransformNode initialized with default parameters");
 
-EventHoughNode::EventHoughNode(const rclcpp::NodeOptions& options) : Node("pandect_event_hough_node", options) {
+	// subscriber for handling incoming messages
+	subscriber_ = this->create_subscription<event_camera_msgs::msg::EventPacket>(
+		"~/events", 
+		rclcpp::SensorDataQoS(),
+		std::bind(&HoughTransformNode::eventMsgCallback,
+		this,
+		std::placeholders::_1));
 
-  this->declareAndLoadParameter("param", param_, "TODO", true, false, false, 0.0, 10.0, 1.0);
-  this->setup();
+	RCLCPP_INFO(this->get_logger(), "Subscribed to '%s'", subscriber_->get_topic_name());
+
+	// publisher for publishing outgoing messages
+	publisher_ = this->create_publisher<std_msgs::msg::Int32>("~/output", 10);
+	RCLCPP_INFO(this->get_logger(), "Publishing to '%s'", publisher_->get_topic_name());
 }
 
 
-template <typename T>
-void EventHoughNode::declareAndLoadParameter(const std::string& name,
-                                                         T& param,
-                                                         const std::string& description,
-                                                         const bool add_to_auto_reconfigurable_params,
-                                                         const bool is_required,
-                                                         const bool read_only,
-                                                         const std::optional<double>& from_value,
-                                                         const std::optional<double>& to_value,
-                                                         const std::optional<double>& step_value,
-                                                         const std::string& additional_constraints) {
-
-  rcl_interfaces::msg::ParameterDescriptor param_desc;
-  param_desc.description = description;
-  param_desc.additional_constraints = additional_constraints;
-  param_desc.read_only = read_only;
-
-  auto type = rclcpp::ParameterValue(param).get_type();
-
-  if (from_value.has_value() && to_value.has_value()) {
-    if constexpr(std::is_integral_v<T>) {
-      rcl_interfaces::msg::IntegerRange range;
-      T step = static_cast<T>(step_value.has_value() ? step_value.value() : 1);
-      range.set__from_value(static_cast<T>(from_value.value())).set__to_value(static_cast<T>(to_value.value())).set__step(step);
-      param_desc.integer_range = {range};
-    } else if constexpr(std::is_floating_point_v<T>) {
-      rcl_interfaces::msg::FloatingPointRange range;
-      T step = static_cast<T>(step_value.has_value() ? step_value.value() : 1.0);
-      range.set__from_value(static_cast<T>(from_value.value())).set__to_value(static_cast<T>(to_value.value())).set__step(step);
-      param_desc.floating_point_range = {range};
-    } else {
-      RCLCPP_WARN(this->get_logger(), "Parameter type of parameter '%s' does not support specifying a range", name.c_str());
-    }
-  }
-
-  this->declare_parameter(name, type, param_desc);
-
-  try {
-    param = this->get_parameter(name).get_value<T>();
-    std::stringstream ss;
-    ss << "Loaded parameter '" << name << "': ";
-    if constexpr(is_vector_v<T>) {
-      ss << "[";
-      for (const auto& element : param) ss << element << (&element != &param.back() ? ", " : "");
-      ss << "]";
-    } else {
-      ss << param;
-    }
-    RCLCPP_INFO_STREAM(this->get_logger(), ss.str());
-  } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-    if (is_required) {
-      RCLCPP_FATAL_STREAM(this->get_logger(), "Missing required parameter '" << name << "', exiting");
-      exit(EXIT_FAILURE);
-    } else {
-      std::stringstream ss;
-      ss << "Missing parameter '" << name << "', using default value: ";
-      if constexpr(is_vector_v<T>) {
-        ss << "[";
-        for (const auto& element : param) ss << element << (&element != &param.back() ? ", " : "");
-        ss << "]";
-      } else {
-        ss << param;
-      }
-      RCLCPP_WARN_STREAM(this->get_logger(), ss.str());
-      this->set_parameters({rclcpp::Parameter(name, rclcpp::ParameterValue(param))});
-    }
-  }
-
-  if (add_to_auto_reconfigurable_params) {
-    std::function<void(const rclcpp::Parameter&)> setter = [&param](const rclcpp::Parameter& p) {
-      param = p.get_value<T>();
-    };
-    auto_reconfigurable_params_.push_back(std::make_tuple(name, setter));
-  }
+void HoughTransformNode::eventMsgCallback(const event_camera_msgs::msg::EventPacket::ConstSharedPtr msg) {
+	RCLCPP_INFO(this->get_logger(), "Message received: '%d'", 2);
+	
+	if (hough_transform_estimator_.needToInitialize(msg->encoding, msg->width, msg->height)) {
+		hough_transform_estimator_.initializeCameraParameters(msg->encoding, msg->width, msg->height);
+		RCLCPP_INFO(this->get_logger(), "HoughTransformEstimator initialized with encoding: '%s', width: %u, height: %u",
+			msg->encoding.c_str(), msg->width, msg->height);
+	}
+	RCLCPP_INFO(this->get_logger(), "Processing events from message");
+	hough_transform_estimator_.update(msg->events.data(), msg->events.size());
+	
+	RCLCPP_INFO(this->get_logger(), "Events processed: %zu", msg->events.size());
+	if (hough_transform_estimator_.getBestCircle().votes > 0) {
+		RCLCPP_INFO(this->get_logger(), "Best circle found: %s", hough_transform_estimator_.getBestCircle().toString().c_str());
+	} else {
+		RCLCPP_INFO(this->get_logger(), "No circles detected in this packet.");
+	}
+	RCLCPP_INFO(this->get_logger(), "Processing complete for this packet.");
 }
 
-
-rcl_interfaces::msg::SetParametersResult EventHoughNode::parametersCallback(const std::vector<rclcpp::Parameter>& parameters) {
-
-  for (const auto& param : parameters) {
-    for (auto& auto_reconfigurable_param : auto_reconfigurable_params_) {
-      if (param.get_name() == std::get<0>(auto_reconfigurable_param)) {
-        std::get<1>(auto_reconfigurable_param)(param);
-        RCLCPP_INFO(this->get_logger(), "Reconfigured parameter '%s'", param.get_name().c_str());
-        break;
-      }
-    }
-  }
-
-  rcl_interfaces::msg::SetParametersResult result;
-  result.successful = true;
-
-  return result;
-}
-
-
-void EventHoughNode::setup() {
-
-  // callback for dynamic parameter configuration
-  parameters_callback_ = this->add_on_set_parameters_callback(std::bind(&EventHoughNode::parametersCallback, this, std::placeholders::_1));
-
-  // subscriber for handling incoming messages
-  subscriber_ = this->create_subscription<std_msgs::msg::Int32>("~/input", 10, std::bind(&EventHoughNode::topicCallback, this, std::placeholders::_1));
-  RCLCPP_INFO(this->get_logger(), "Subscribed to '%s'", subscriber_->get_topic_name());
-
-  // publisher for publishing outgoing messages
-  publisher_ = this->create_publisher<std_msgs::msg::Int32>("~/output", 10);
-  RCLCPP_INFO(this->get_logger(), "Publishing to '%s'", publisher_->get_topic_name());
-}
-
-
-void EventHoughNode::topicCallback(const std_msgs::msg::Int32::ConstSharedPtr& msg) {
-
-  RCLCPP_INFO(this->get_logger(), "Message received: '%d'", msg->data);
-
-  // publish message
-  std_msgs::msg::Int32::UniquePtr out_msg = std::make_unique<std_msgs::msg::Int32>();
-  out_msg->data = msg->data;
-  publisher_->publish(std::move(out_msg));
-  RCLCPP_INFO(this->get_logger(), "Message published: '%d'", out_msg->data);
-}
-
-
-}
+}  // namespace pandect_event_hough
