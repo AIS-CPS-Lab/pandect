@@ -1,7 +1,7 @@
 #include <functional>
 
 // Update the include path below if the header is in the same directory or adjust as needed
-#include "pandect_event_hough_node.hpp"
+#include "pandect_event_hough/pandect_event_hough_node.hpp"
 
 #include <rclcpp_components/register_node_macro.hpp>
 RCLCPP_COMPONENTS_REGISTER_NODE(pandect_event_hough::HoughTransformNode)
@@ -49,5 +49,27 @@ void HoughTransformNode::eventMsgCallback(const event_camera_msgs::msg::EventPac
 	}
 	RCLCPP_INFO(this->get_logger(), "Processing complete for this packet.");
 }
+
+void publishTransformImage() {
+    int width = 1280, height = 720;
+
+    // Create blank image (grayscale or RGB)
+    cv::Mat image = cv::Mat::zeros(height, width, CV_8UC3);
+
+    // Draw circles
+    for (const auto& c : getBestCircles()) {
+        cv::circle(image, cv::Point(c.x, c.y), c.radius, cv::Scalar(0, 255, 0), 2); // Green circle
+    }
+
+    // Convert to ROS2 message
+    std_msgs::msg::Header header;
+    header.stamp = this->now();
+    header.frame_id = "camera";
+
+    sensor_msgs::msg::Image::SharedPtr msg = cv_bridge::CvImage(header, "bgr8", image).toImageMsg();
+
+    image_pub_->publish(*msg);
+}
+
 
 }  // namespace pandect_event_hough

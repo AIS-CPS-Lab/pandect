@@ -14,17 +14,19 @@ using Decoder = event_camera_codecs::Decoder<EventPacket, HoughCircleProcessor>;
 class HoughTransformEstimator {
 public:
     HoughTransformEstimator(
-        unsigned int num_steps_angle = 360, // default number of steps in theta
-        unsigned int num_steps_radius = 100, // default number of steps in radius
-        unsigned int min_radius = 5, // default minimum radius to consider
-        unsigned int max_radius = 50 // default maximum radius to consider
+        unsigned int num_steps_angle = 36, // default number of steps in theta
+        unsigned int num_steps_radius = 20, // default number of steps in radius
+        unsigned int min_radius = 50, // default minimum radius to consider
+        unsigned int max_radius = 800 // default maximum radius to consider
         ) :
             hough_circle_processor_(nullptr),
             decoder_(nullptr),
             num_steps_angle_(num_steps_angle),
             num_steps_radius_(num_steps_radius),
             min_radius_(min_radius),
-            max_radius_(max_radius)
+            max_radius_(max_radius),
+            image_width_(0),
+            image_height_(0)
     {
         if (num_steps_angle == 0 || num_steps_radius == 0 || min_radius >= max_radius) {
             throw std::invalid_argument("Invalid parameters for HoughTransformEstimator");
@@ -35,12 +37,19 @@ public:
         const std::string &encoding, // encoding type
         unsigned int image_width, // image width
         unsigned int image_height // image height
-        ) const {
+        ) {
         if (decoder_) {
-            return encoding_ != encoding ||
-                   decoder_->getWidth() != image_width ||
-                   decoder_->getHeight() != image_height ||
-                   !hough_circle_processor_;
+            bool needUpdate =   encoding_ != encoding ||
+                                image_width_ != image_width ||
+                                image_height_ != image_height ||
+                                !hough_circle_processor_;
+            if (needUpdate) {
+                encoding_ = encoding;
+                image_width_ = image_width;
+                image_height_ = image_height;
+                return true; // Decoder needs to be initialized with new parameters
+            }
+            return false; // Decoder is already initialized with the same parameters
         } else {
             return true; // Decoder is not initialized, so we need to initialize it
         }
@@ -51,10 +60,7 @@ public:
         unsigned int image_width, // image width
         unsigned int image_height // image height
         ) {
-        decoder_ = std::unique_ptr<Decoder>(decoder_factory_.getInstance(
-            encoding,
-            image_width,
-            image_height));
+        decoder_ = decoder_factory_.getInstance(encoding, image_width, image_height);
         updateProcessorParameters();
     }
 
@@ -71,11 +77,11 @@ public:
         return max_radius_;
     }
 
-    HoughCircleProcessor::Circle getBestCircle() const {
+    std::vector<HoughCircleProcessor::Circle> getBestCircles() const {;
         if (!hough_circle_processor_) {
             throw std::runtime_error("HoughCircleProcessor is not initialized.");
         }
-        return hough_circle_processor_->getBestCircle();
+        return hough_circle_processor_->getBestCircles();
     }
 
     void setRadius(
@@ -134,9 +140,11 @@ private:
     }
 
     std::unique_ptr<HoughCircleProcessor> hough_circle_processor_;
-    std::unique_ptr<Decoder> decoder_;
+    Decoder * decoder_;
     event_camera_codecs::DecoderFactory<EventPacket, HoughCircleProcessor> decoder_factory_;
     std::string encoding_;
+    unsigned int image_width_;
+    unsigned int image_height_;
     unsigned int num_steps_angle_;
     unsigned int num_steps_radius_;
     unsigned int min_radius_;

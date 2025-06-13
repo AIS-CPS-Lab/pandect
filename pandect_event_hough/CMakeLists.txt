@@ -11,6 +11,9 @@ find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(event_camera_codecs REQUIRED)
 find_package(event_camera_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
 
 set(TARGET_NAME pandect_event_hough_node_component)
 
@@ -24,6 +27,8 @@ rclcpp_components_register_node(${TARGET_NAME}
 target_include_directories(${TARGET_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
+  ${OpenCV_INCLUDE_DIRS} 
+  ${cv_bridge_INCLUDE_DIRS}
 )
 target_compile_features(${TARGET_NAME} PUBLIC c_std_99 cxx_std_17)
 
@@ -31,6 +36,9 @@ ament_target_dependencies(${TARGET_NAME}
   rclcpp
   rclcpp_components
   std_msgs
+  sensor_msgs
+  cv_bridge
+  OpenCV
   event_camera_codecs
   event_camera_msgs
 )

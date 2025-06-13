@@ -1,16 +1,20 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "ROS2",
+            "browse": {
+                    "databaseFilename": "${default}",
+                    "limitSymbolsToIncludedHeaders": false
+                  },
             "includePath": [
                 "${workspaceFolder}/**",
-                "~/workspaces/**",
-                "/opt/ros/**"
+                "${userHome}/workspaces/**",
+                "/opt/ros/humble/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
+            "cStandard": "gnu11",
+            "cppStandard": "c++17",
             "intelliSenseMode": "linux-gcc-arm64"
         }
     ],

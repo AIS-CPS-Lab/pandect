@@ -9,7 +9,10 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/int32.hpp>
-
+#include <sensor_msgs/msg/image.hpp>
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 namespace pandect_event_hough {
 
@@ -35,6 +38,11 @@ class HoughTransformNode : public rclcpp::Node {
    * @param msg message
    */
   void eventMsgCallback(const event_camera_msgs::msg::EventPacket::ConstSharedPtr msg);
+
+  /**
+   * @brief Publishes the processed image
+   */
+  void publishTransformImage();
 
  private:
   /**

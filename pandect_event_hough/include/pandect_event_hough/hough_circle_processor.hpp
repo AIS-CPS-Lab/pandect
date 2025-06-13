@@ -12,8 +12,8 @@ public:
         unsigned int image_height, // image height
         unsigned int num_steps_angle, // number of steps in theta
         unsigned int num_steps_radius, // number of steps in radius
-        unsigned int min_radius, // minimum radius to consider
-        unsigned int max_radius) // maximum radius to consider
+        float min_radius, // minimum radius to consider
+        float max_radius) // maximum radius to consider
         : accumulator(
             image_width * image_height, 0), 
             image_width(image_width), 
@@ -36,8 +36,8 @@ public:
                           << ", max_radius=" << max_radius << std::endl;
                 throw std::invalid_argument("Invalid parameters for HoughCircleProcessor");
             }
-
-            radius_increment = (max_radius - min_radius) / num_steps_radius;
+            radius_increment = (max_radius - min_radius) / num_steps_radius; // Calculate the radius increment based on the number of steps
+            // radius_increment = (max_radius - min_radius) / static_cast<float>(num_steps_radius);
             unit_circle_points = std::vector<std::pair<float, float>>();
             for (unsigned int i = 0; i < num_steps_angle; ++i) {
                 float theta = 2.0f * M_PI * i / num_steps_angle;
@@ -55,7 +55,7 @@ public:
         int y = static_cast<int>(ey);
 
         // Iterate over all possible radii and angles
-        for (unsigned int r = min_radius; r <= max_radius; r += radius_increment) {
+        for (float r = min_radius; r <= max_radius; r += radius_increment) {
             for (const auto& [dx, dy] : unit_circle_points) {
                 int x0 = static_cast<int>(x - r * dx);
                 int y0 = static_cast<int>(y - r * dy);
@@ -74,7 +74,7 @@ public:
     void finished() override {
         // Process the accumulator to find circles
         std::vector<Circle> detected_circles;
-        for (unsigned int r = min_radius; r <= max_radius; r += radius_increment) {
+        for (float r = min_radius; r <= max_radius; r += radius_increment) {
             for (unsigned int y = 0; y < image_height; ++y) {
                 for (unsigned int x = 0; x < image_width; ++x) {
                     int index = getAccumulatorIndex(r, x, y);
@@ -87,6 +87,14 @@ public:
                 }
             }
         }
+
+        // Sort detected circles by votes (descending)
+        std::sort(detected_circles.begin(), detected_circles.end(),
+                  [](const Circle& a, const Circle& b) {
+                      return a.votes > b.votes;
+                  });
+        int top_n = std::min(10, static_cast<int>(circles.size()));
+        best_circles.assign(circles.begin(), circles.begin() + top_n);
 
         // Reset the accumulator for the next packet
         std::fill(accumulator.begin(), accumulator.end(), 0);
@@ -112,7 +120,7 @@ public:
     struct Circle {
         unsigned int x; // x-coordinate of the circle center
         unsigned int y; // y-coordinate of the circle center
-        unsigned int radius; // radius of the circle
+        float radius; // radius of the circle
         int votes; // number of votes for this circle
 
         std::string toString() const {
@@ -123,8 +131,8 @@ public:
         }
     };
 
-    Circle getBestCircle() const {
-        return best_circle; // Return the best circle found in the current packet
+    std::vector<Circle> getBestCircles() const {
+        return best_circles; // Return the best circle found in the current packet
     }
     
 private:
@@ -133,24 +141,24 @@ private:
     unsigned int image_height;
     unsigned int num_steps_angle;
     unsigned int num_steps_radius;
-    int radius_increment;
-    unsigned int min_radius;
-    unsigned int max_radius;
+    float radius_increment;
+    float min_radius;
+    float max_radius;
     std::vector<std::pair<float, float>> unit_circle_points; // precomputed unit circle points for radius calculations
 
-    int getRadiusIndex(unsigned int radius) const {
+    int getRadiusIndex(float radius) const {
         if (radius < min_radius || radius > max_radius) {
             throw std::out_of_range("Radius out of bounds");
         }
-        return (radius - min_radius) * num_steps_radius; // Calculate index based on radius
+        return static_cast<int>((radius - min_radius) * num_steps_radius); // Calculate index based on radius
     }
 
-    int getAccumulatorIndex(unsigned int radius, unsigned int x, unsigned int y) const {
+    int getAccumulatorIndex(float radius, unsigned int x, unsigned int y) const {
         if (x >= image_width || y >= image_height) {
             throw std::out_of_range("Coordinates out of bounds");
         }
         return getRadiusIndex(radius) + y * image_width + x; // Calculate index based on radius and coordinates
     }
 
-    Circle best_circle; // best circle found in the current packet
+    std::vector<Circle> best_circles; // best circle found in the current packet
 };
