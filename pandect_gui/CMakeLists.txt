@@ -8,6 +8,17 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(event_camera_codecs REQUIRED)
+
+include(FetchContent)
+set(THREEPP_BUILD_TESTS OFF)
+set(THREEPP_BUILD_EXAMPLES OFF)
+FetchContent_Declare(
+        threepp
+        GIT_REPOSITORY https://github.com/markaren/threepp.git
+        GIT_TAG edd2597344f21cc491f65354849dee1d66c2e427
+)
+FetchContent_MakeAvailable(threepp)
 
 set(TARGET_NAME pandect_gui)
 
@@ -22,6 +33,10 @@ target_compile_features(${TARGET_NAME} PUBLIC c_std_99 cxx_std_17)
 ament_target_dependencies(${TARGET_NAME}
   rclcpp
   std_msgs
+  event_camera_codecs
+)
+target_link_libraries(${TARGET_NAME}
+  threepp::threepp
 )
 
 install(TARGETS ${TARGET_NAME}

@@ -6,6 +6,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/int32.hpp>
+#include "pandect_gui/plot_processor.hpp"
 
 
 namespace pandect_gui {
