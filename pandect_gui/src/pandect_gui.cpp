@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
 	auto camera = threepp::PerspectiveCamera::create(60, canvas.aspect(), 0.00001f, 1000.0f);
 	camera->position.z = 1;
 
-	OrbitControls controls(*camera, canvas);
+	threepp::OrbitControls controls(*camera, canvas);
 
 	std::pair depth_dim = {320, 240};
 	const int numParticles = 10000;
@@ -156,12 +156,12 @@ int main(int argc, char *argv[]) {
 	mat->side = threepp::Side::Double;
 	auto im = threepp::InstancedMesh::create(
 		threepp::BoxGeometry::create(0.005, 0.005, 0.005),mat, numParticles);
-	im->rotateZ(math::degToRad(180));
-	im->rotateY(math::degToRad(180));
+	im->rotateZ(threepp::math::degToRad(180));
+	im->rotateY(threepp::math::degToRad(180));
 
 	scene->add(im);
 
-	canvas.onWindowResize([&](WindowSize size) {
+	canvas.onWindowResize([&](threepp::WindowSize size) {
 		camera->aspect = size.aspect();
 		camera->updateProjectionMatrix();
 		renderer.setSize(size);
@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
 		// Render loop
 		for (int i = 0; i < numParticles; ++i) {
 			matrix.identity();
-			
+
 		}
 		renderer.render(*scene, *camera); 
 		});
