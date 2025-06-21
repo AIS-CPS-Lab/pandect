@@ -1,17 +1,17 @@
 #include <event_camera_codecs/event_processor.h>
+
 #include <threepp/threepp.hpp>
 
 class PlotProcessor : event_camera_codecs::EventProcessor {
-public:
-    PlotProcessor(unsigned int numParticles)
-        {
-            m_particles = std::make_shared<threepp::InstancedMesh>(
-                threepp::BoxGeometry::create(0.005, 0.005, 0.005),
-                threepp::MeshBasicMaterial::create(),
-                numParticles);
-        }
+   public:
+    PlotProcessor(unsigned int numParticles) {
+        m_particles = std::make_shared<threepp::InstancedMesh>(
+            threepp::BoxGeometry::create(0.005, 0.005, 0.005),
+            threepp::MeshBasicMaterial::create(), numParticles);
+    }
 
-    void eventCD(uint64_t, uint16_t ex, uint16_t ey, uint8_t polarity) override {
+    void eventCD(uint64_t, uint16_t ex, uint16_t ey,
+                 uint8_t polarity) override {
         m_matrix.identity();
         m_matrix.setPosition(ex, ey, m_depth);
 
@@ -28,10 +28,10 @@ public:
 
     void finished() override {
         m_particles->instanceMatrix()->needsUpdate();
-        m_depth ++;
+        m_depth++;
     }
 
-private:
+   private:
     std::shared_ptr<threepp::InstancedMesh> m_particles;
     threepp::Matrix4 m_matrix;
     unsigned int m_currentIndex = 0;

@@ -3,9 +3,9 @@
         {
             "name": "ROS2",
             "browse": {
-                    "databaseFilename": "${default}",
-                    "limitSymbolsToIncludedHeaders": false
-                  },
+                "databaseFilename": "${default}",
+                "limitSymbolsToIncludedHeaders": false
+            },
             "includePath": [
                 "${workspaceFolder}/**",
                 "${userHome}/workspaces/**",

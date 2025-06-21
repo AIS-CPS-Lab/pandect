@@ -1,18 +1,17 @@
 #pragma once
 
+#include <cv_bridge/cv_bridge.h>
+
+#include <event_camera_msgs/msg/event_packet.hpp>
 #include <memory>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <pandect_event_hough/hough_circle_estimator.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/int32.hpp>
 #include <string>
 #include <vector>
-
-#include <pandect_event_hough/hough_circle_estimator.hpp>
-#include <event_camera_msgs/msg/event_packet.hpp>
-
-#include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/int32.hpp>
-#include <sensor_msgs/msg/image.hpp>
-#include <cv_bridge/cv_bridge.h>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
 
 namespace pandect_event_hough {
 
@@ -20,41 +19,40 @@ namespace pandect_event_hough {
  * @brief HoughTransformNode class
  */
 class HoughTransformNode : public rclcpp::Node {
+   public:
+    /**
+     * @brief Constructor
+     *
+     * @param options node options
+     */
+    explicit HoughTransformNode(const rclcpp::NodeOptions& options);
 
- public:
+   private:
+    /**
+     * @brief Processes messages received by a subscriber
+     *
+     * @param msg message
+     */
+    void eventMsgCallback(
+        const event_camera_msgs::msg::EventPacket::ConstSharedPtr msg);
 
-  /**
-   * @brief Constructor
-   *
-   * @param options node options
-   */
-  explicit HoughTransformNode(const rclcpp::NodeOptions& options);
+    /**
+     * @brief Publishes the processed image
+     */
+    void publishTransformImage();
 
- private:
+   private:
+    /**
+     * @brief Subscriber
+     */
+    rclcpp::Subscription<event_camera_msgs::msg::EventPacket>::SharedPtr
+        subscriber_;
 
-  /**
-   * @brief Processes messages received by a subscriber
-   *
-   * @param msg message
-   */
-  void eventMsgCallback(const event_camera_msgs::msg::EventPacket::ConstSharedPtr msg);
+    /**
+     * @brief Publisher
+     */
+    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr publisher_;
 
-  /**
-   * @brief Publishes the processed image
-   */
-  void publishTransformImage();
-
- private:
-  /**
-   * @brief Subscriber
-   */
-  rclcpp::Subscription<event_camera_msgs::msg::EventPacket>::SharedPtr subscriber_;
-
-  /**
-   * @brief Publisher
-   */
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr publisher_;
-
-  HoughTransformEstimator hough_transform_estimator_;
+    HoughTransformEstimator hough_transform_estimator_;
 };
-}
+}  // namespace pandect_event_hough

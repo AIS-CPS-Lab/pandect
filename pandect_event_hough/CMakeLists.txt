@@ -27,7 +27,7 @@ rclcpp_components_register_node(${TARGET_NAME}
 target_include_directories(${TARGET_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
-  ${OpenCV_INCLUDE_DIRS} 
+  ${OpenCV_INCLUDE_DIRS}
   ${cv_bridge_INCLUDE_DIRS}
 )
 target_compile_features(${TARGET_NAME} PUBLIC c_std_99 cxx_std_17)

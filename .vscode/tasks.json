@@ -1,33 +1,36 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "colcon: build (debug)",
-      "type": "shell",
-      "command": [
-        "source /opt/ros/humble/setup.bash;",
-        "cd ${config:build_directory};",
-        "colcon build",
-        "--symlink-install",
-        "--event-handlers console_cohesion+",
-        "--base-paths ${config:build_directory}",
-        "--cmake-args -DCMAKE_BUILD_TYPE=Debug"
-      ]
-    },
-    {
-      "label": "colcon: clean",
-      "type": "shell",
-      "command": ["cd ${config:build_directory};", "rm -rf build/ install/ log/;"]
-    },
-    {
-      "label": "colcon: test",
-      "type": "shell",
-      "command": [
-        "cd ${config:build_directory};",
-        "colcon test",
-        "--packages-select <package-name>",
-        "--event-handlers console_direct+;"
-      ]
-    },
-  ]
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "colcon: build (debug)",
+            "type": "shell",
+            "command": [
+                "source /opt/ros/humble/setup.bash;",
+                "cd ${config:build_directory};",
+                "colcon build",
+                "--symlink-install",
+                "--event-handlers console_cohesion+",
+                "--base-paths ${config:build_directory}",
+                "--cmake-args -DCMAKE_BUILD_TYPE=Debug"
+            ]
+        },
+        {
+            "label": "colcon: clean",
+            "type": "shell",
+            "command": [
+                "cd ${config:build_directory};",
+                "rm -rf build/ install/ log/;"
+            ]
+        },
+        {
+            "label": "colcon: test",
+            "type": "shell",
+            "command": [
+                "cd ${config:build_directory};",
+                "colcon test",
+                "--packages-select <package-name>",
+                "--event-handlers console_direct+;"
+            ]
+        },
+    ]
 }
