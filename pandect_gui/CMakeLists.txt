@@ -8,7 +8,9 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(event_camera_codecs REQUIRED)
+find_package(event_camera_msgs REQUIRED)
 
 include(FetchContent)
 set(THREEPP_BUILD_TESTS OFF)
@@ -23,23 +25,44 @@ FetchContent_MakeAvailable(threepp)
 set(TARGET_NAME pandect_gui)
 
 add_executable(${TARGET_NAME} src/pandect_gui.cpp)
+add_executable(${TARGET_NAME}_pc_publsher src/pandect_pc_publisher.cpp)
 
 target_include_directories(${TARGET_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
+
+target_include_directories(${TARGET_NAME}_pc_publsher PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 target_compile_features(${TARGET_NAME} PUBLIC c_std_99 cxx_std_17)
+target_compile_features(${TARGET_NAME}_pc_publsher PUBLIC c_std_99 cxx_std_17)
 
 ament_target_dependencies(${TARGET_NAME}
   rclcpp
   std_msgs
   event_camera_codecs
 )
+
+ament_target_dependencies(${TARGET_NAME}_pc_publsher
+  rclcpp
+  std_msgs
+  event_camera_codecs
+  event_camera_msgs
+  sensor_msgs
+)
+
 target_link_libraries(${TARGET_NAME}
   threepp::threepp
 )
 
 install(TARGETS ${TARGET_NAME}
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS ${TARGET_NAME}_pc_publsher
   DESTINATION lib/${PROJECT_NAME}
 )
 

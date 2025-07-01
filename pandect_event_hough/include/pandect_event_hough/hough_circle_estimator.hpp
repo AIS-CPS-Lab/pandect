@@ -140,12 +140,12 @@ class HoughTransformEstimator {
     event_camera_codecs::DecoderFactory<EventPacket, HoughCircleProcessor>
         decoder_factory_;
     std::string encoding_;
-    unsigned int image_width_;
-    unsigned int image_height_;
-    unsigned int num_steps_angle_;
-    unsigned int num_steps_radius_;
-    unsigned int min_radius_;
-    unsigned int max_radius_;
+    unsigned int image_width_ = 0;
+    unsigned int image_height_ = 0;
+    unsigned int num_steps_angle_ = 1;
+    unsigned int num_steps_radius_ = 1;
+    unsigned int min_radius_ = 0;
+    unsigned int max_radius_ = 1;
 };
 
 }  // namespace pandect_event_hough

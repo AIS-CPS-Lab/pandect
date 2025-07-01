@@ -62,8 +62,8 @@ class HoughCircleProcessor : public event_camera_codecs::EventProcessor {
                 int y0 = static_cast<int>(y - r * dy);
 
                 // Check if the point is within bounds
-                if (x0 >= 0 && x0 < image_width && y0 >= 0 &&
-                    y0 < image_height) {
+                if (x0 >= 0 && x0 < static_cast<int>(image_width) && y0 >= 0 &&
+                    y0 < static_cast<int>(image_height)) {
                     accumulator[getAccumulatorIndex(r, x0, y0)] +=
                         1;  // Increment or decrement based on polarity
                 }
@@ -96,23 +96,24 @@ class HoughCircleProcessor : public event_camera_codecs::EventProcessor {
         std::sort(
             detected_circles.begin(), detected_circles.end(),
             [](const Circle& a, const Circle& b) { return a.votes > b.votes; });
-        int top_n = std::min(10, static_cast<int>(circles.size()));
-        best_circles.assign(circles.begin(), circles.begin() + top_n);
+        int top_n = std::min(10, static_cast<int>(detected_circles.size()));
+        best_circles.assign(detected_circles.begin(),
+                            detected_circles.begin() + top_n);
 
         // Reset the accumulator for the next packet
         std::fill(accumulator.begin(), accumulator.end(), 0);
 
         // Output detected circles
         if (!detected_circles.empty()) {
-            const Circle* best_circle = &detected_circles[0];
-            for (const auto& circle : detected_circles) {
-                if (circle.votes > best_circle->votes) {
-                    best_circle = &circle;
+            Circle best_circle = detected_circles[0];
+            for (const auto circle : detected_circles) {
+                if (circle.votes > best_circle.votes) {
+                    best_circle = circle;
                 }
             }
-            std::cout << "Best circle: " << best_circle->toString()
-                      << std::endl;
-            this->best_circle = *best_circle;  // Store the best circle found
+            std::cout << "Best circle: " << best_circle.toString() << std::endl;
+            this->best_circles.push_back(
+                best_circle);  // Store the best circle found
         } else {
             std::cout << "No circles detected." << std::endl;
         }

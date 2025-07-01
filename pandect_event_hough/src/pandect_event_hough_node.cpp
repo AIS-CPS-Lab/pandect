@@ -50,37 +50,14 @@ void HoughTransformNode::eventMsgCallback(
 
     RCLCPP_INFO(this->get_logger(), "Events processed: %zu",
                 msg->events.size());
-    if (hough_transform_estimator_.getBestCircle().votes > 0) {
+    if (hough_transform_estimator_.getBestCircles()[0].votes > 0) {
         RCLCPP_INFO(
             this->get_logger(), "Best circle found: %s",
-            hough_transform_estimator_.getBestCircle().toString().c_str());
+            hough_transform_estimator_.getBestCircles()[0].toString().c_str());
     } else {
         RCLCPP_INFO(this->get_logger(), "No circles detected in this packet.");
     }
     RCLCPP_INFO(this->get_logger(), "Processing complete for this packet.");
-}
-
-void publishTransformImage() {
-    int width = 1280, height = 720;
-
-    // Create blank image (grayscale or RGB)
-    cv::Mat image = cv::Mat::zeros(height, width, CV_8UC3);
-
-    // Draw circles
-    for (const auto& c : getBestCircles()) {
-        cv::circle(image, cv::Point(c.x, c.y), c.radius, cv::Scalar(0, 255, 0),
-                   2);  // Green circle
-    }
-
-    // Convert to ROS2 message
-    std_msgs::msg::Header header;
-    header.stamp = this->now();
-    header.frame_id = "camera";
-
-    sensor_msgs::msg::Image::SharedPtr msg =
-        cv_bridge::CvImage(header, "bgr8", image).toImageMsg();
-
-    image_pub_->publish(*msg);
 }
 
 }  // namespace pandect_event_hough
